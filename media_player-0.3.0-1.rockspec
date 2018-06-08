@@ -1,9 +1,17 @@
+-- This file was automatically generated for the LuaDist project.
+
 package = "media_player"
-version = "0.2.1-1"
+version = "0.3.0-1"
+-- LuaDist source
 source = {
-   url = "git://github.com/stefano-m/lua-media_player",
-   tag = "v0.2.1"
+  tag = "0.3.0-1",
+  url = "git://github.com/LuaDist-testing/media_player.git"
 }
+-- Original source
+-- source = {
+--    url = "git://github.com/stefano-m/lua-media_player",
+--    tag = "v0.3.0"
+-- }
 description = {
    summary = "Control your media player using the DBus Mpris specification",
    detailed = "Control your media player using the DBus Mpris specification",
@@ -15,7 +23,7 @@ supported_platforms = {
 }
 dependencies = {
    "lua >= 5.1",
-   "dbus_proxy >= 0.7.0, < 1"
+   "dbus_proxy >= 0.8.5, < 1"
 }
 build = {
    type = "builtin",
