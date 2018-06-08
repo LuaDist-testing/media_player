@@ -22,11 +22,6 @@
 
   This library is implemented on top of the [`dbus_proxy`](https://github.com/stefano-m/lua-dbus_proxy) module.
 
-  A `dbus_proxy.Proxy` object **cannot** be created unless the media player
-  application is running.  The MediaPlayer object implemented here works around
-  this limitation by intelligently polling the application and, if does not
-  find it, silently ignoring it.
-
   @license Apache License, version 2.0
   @author Stefano Mazzucco <stefano AT curso DOT re>
   @copyright 2017 Stefano Mazzucco
@@ -98,7 +93,7 @@ end
 -- @return an empty string if the application is not available
 function MediaPlayer:position_as_str()
   if self.is_connected then
-    return time_from_useconds_as_str(self.Position)
+    return time_from_useconds_as_str(self:Get("Position"))
   else
     return ""
   end
@@ -124,7 +119,7 @@ function MediaPlayer:info()
     return {}
   end
 
-  local metadata = self.Metadata
+  local metadata = self:Get("Metadata")
 
   local info = {
     album = metadata["xesam:album"],
