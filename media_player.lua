@@ -98,24 +98,53 @@ setmetatable(dummy, {
                __newindex = function () end
 })
 
---- Return whether the application is alive or not.
-local function is_alive(player)
+local function is_connected(player)
   -- If Introspect returns nil, it means that we lost
   -- connection with the application (i.e. stale proxy).
-  local invalid = (player._proxy == dummy)
+  local disconnected =  (player._proxy == dummy)
     or (player._proxy:Introspect() == nil)
-  if invalid then
+  return not disconnected
+end
+
+local function try_reconnect(player)
+  local is_reconnected
+
+  local connected = is_connected(player)
+
+  if not connected then
     local ok, p = get_proxy(player.name)
+
     if ok then
       player._proxy = p
     end
-    return ok
+    is_reconnected = ok
+  else
+    is_reconnected = not connected
   end
-  return not invalid
+
+  return is_reconnected
+
 end
 
 --- @type MediaPlayer
 local MediaPlayer = {}
+
+--- Check whether the player object is connected to the actual media player via
+--- DBus
+-- @return whether the player is connected
+-- @see MediaPlayer:try_reconnect
+function MediaPlayer:is_connected()
+  return is_connected(self)
+end
+
+--- Try to reconnect the proxy associated with the media player.
+-- If successful, the `_proxy` property of `player` will be set to a new proxy
+-- object. If the proxy is already connected, nothing happens.
+-- @return whether the proxy was reconnected.
+-- @see MediaPlayer:is_connected
+function MediaPlayer:try_reconnect()
+  return try_reconnect(self)
+end
 
 --- Get the value of a property. You should not need to use this
 -- method directly. Instead, you should access the property with the dot
@@ -134,33 +163,59 @@ function MediaPlayer:Get(property_name)
   return p:Get(self.interface, property_name)
 end
 
+
+local function get_from_proxy(proxy_object, key)
+
+  local value
+
+  local value_from_proxy = proxy_object[key]
+
+  if type(value_from_proxy) == "function" then
+
+    value = function (_, ...)
+      return value_from_proxy(proxy_object, ...)
+    end
+
+  elseif proxy_object.accessors[key] then
+
+    -- Ensure we get the most up-to-date value.
+    value = proxy_object:Get(proxy_object.interface, key)
+
+  else
+
+    value = value_from_proxy
+
+  end
+
+  return value
+end
+
 --- Return properties and methods from the underlying proxy object
 -- transparently. If the proxy is not alive, return no-op values.
 -- Used as `__index` key in the player's metatable.
 local function get_key(player, key)
-  if is_alive(player) then
 
-    if player._proxy.accessors[key] then
-      return MediaPlayer.Get(player, key)
-    end
+  local value
 
-    local from_proxy = player._proxy[key]
+  local own_value = rawget(player, key)
 
-    if type(from_proxy) == "function" then
-      return function (_, ...)
-        return from_proxy(player._proxy, ...)
-      end
-    end
+  if own_value ~= nil then
 
-    return from_proxy
+    value = own_value
+
+  elseif is_connected(player) or try_reconnect(player) then
+
+    value = get_from_proxy(player._proxy, key)
 
   else
 
-    return dummy
+    value = dummy
 
   end
-end
 
+  return value
+
+end
 
 --- Return the position of the track as a string of the type
 -- `HH:MM:SS`.
@@ -232,7 +287,9 @@ function MediaPlayer:new(name)
     name = name,
     info = self.info,
     position_as_str = self.position_as_str,
-    Get = self.Get
+    Get = self.Get,
+    is_connected = self.is_connected,
+    try_reconnect = self.try_reconnect
   }
   setmetatable(o, {__index = get_key})
   return o
