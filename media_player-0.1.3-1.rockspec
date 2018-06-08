@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "media_player"
- version = "0.1.2-1"
+ version = "0.1.3-1"
 -- LuaDist source
 source = {
-  tag = "0.1.2-1",
+  tag = "0.1.3-1",
   url = "git://github.com/LuaDist-testing/media_player.git"
 }
 -- Original source
 --  source = {
 --     url = "git://github.com/stefano-m/lua-media_player",
---     tag = "v0.1.2"
+--     tag = "v0.1.3"
 --  }
  description = {
     summary = "Control your media player using the DBus Mpris specification",
